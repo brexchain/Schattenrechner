@@ -63,24 +63,46 @@ export const CoordinatePanel: React.FC<CoordinatePanelProps> = ({
         <label htmlFor="city-select" className="block text-xs font-semibold text-slate-400 mb-1">
           Select City / Landmark Preset
         </label>
-        <select
-          id="city-select"
-          className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors"
-          value=""
-          onChange={(e) => {
-            const idx = Number(e.target.value);
-            if (!isNaN(idx) && NOTABLE_LOCATIONS[idx]) {
-              onCitySelect(NOTABLE_LOCATIONS[idx]);
-            }
-          }}
-        >
-          <option value="">– Choose location from list –</option>
-          {NOTABLE_LOCATIONS.map((loc, idx) => (
-            <option key={`${loc.city}-${idx}`} value={idx}>
-              {loc.city}, {loc.country} ({loc.lat.toFixed(2)}°, {loc.lon.toFixed(2)}°)
-            </option>
-          ))}
-        </select>
+        {(() => {
+          const matchedIdx = NOTABLE_LOCATIONS.findIndex(
+            (loc) => Math.abs(loc.lat - lat) < 0.25 && Math.abs(loc.lon - lon) < 0.25
+          );
+          return (
+            <select
+              id="city-select"
+              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+              value={matchedIdx !== -1 ? String(matchedIdx) : ''}
+              onChange={(e) => {
+                const idx = Number(e.target.value);
+                if (!isNaN(idx) && NOTABLE_LOCATIONS[idx]) {
+                  onCitySelect(NOTABLE_LOCATIONS[idx]);
+                }
+              }}
+            >
+              <option value="" disabled>
+                {matchedIdx !== -1 ? '– Choose location from list –' : '📍 Custom Coordinate Location'}
+              </option>
+              <optgroup label="⭐ World Capitals">
+                {NOTABLE_LOCATIONS.map((loc, idx) =>
+                  loc.isCapital ? (
+                    <option key={`${loc.city}-${idx}`} value={idx}>
+                      {loc.city}, {loc.country} ({loc.lat.toFixed(2)}°, {loc.lon.toFixed(2)}°)
+                    </option>
+                  ) : null
+                )}
+              </optgroup>
+              <optgroup label="🏙️ Major Metropolises & Landmarks">
+                {NOTABLE_LOCATIONS.map((loc, idx) =>
+                  !loc.isCapital ? (
+                    <option key={`${loc.city}-${idx}`} value={idx}>
+                      {loc.city}, {loc.country} ({loc.lat.toFixed(2)}°, {loc.lon.toFixed(2)}°)
+                    </option>
+                  ) : null
+                )}
+              </optgroup>
+            </select>
+          );
+        })()}
       </div>
 
       {/* Latitude & Longitude Inputs */}

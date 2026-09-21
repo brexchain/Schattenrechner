@@ -1,5 +1,5 @@
 import React, { useRef, useState, useMemo, useCallback } from 'react';
-import { NOTABLE_LOCATIONS, MajorCity } from '../data/continents';
+import { NOTABLE_LOCATIONS } from '../data/continents';
 import { projectGleason, unprojectGleason, Point2D, GLEASON_EQUATOR_RADIUS_RATIO } from '../utils/gleasonProjection';
 import { SolarStatus } from '../types';
 import {
@@ -18,6 +18,7 @@ import {
   Sparkles,
   Maximize2,
   Layers,
+  ChevronDown,
 } from 'lucide-react';
 
 interface GleasonMapProps {
@@ -50,11 +51,8 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
   // Layer toggles
   const [showSun, setShowSun] = useState(true);
   const [showSolarArm, setShowSolarArm] = useState(true);
-  const [showCapitals, setShowCapitals] = useState(true);
   const [showGridOverlays, setShowGridOverlays] = useState(false);
   const [showDaylight, setShowDaylight] = useState(true);
-  const [cityFilter, setCityFilter] = useState<'all' | 'capitals'>('capitals');
-  const [hoveredCity, setHoveredCity] = useState<MajorCity | null>(null);
   const [hoverCoords, setHoverCoords] = useState<{ lat: number; lon: number; x: number; y: number } | null>(null);
 
   // Projection dimensions within SVG viewBox (0 0 800 800)
@@ -77,17 +75,19 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
     );
   }, [solarStatus.subsolarPoint.lat, solarStatus.subsolarPoint.lon, dialRadius, mapCenter]);
 
-  // Projected Cities with Gleason coordinates
-  const projectedCities = useMemo(() => {
-    return NOTABLE_LOCATIONS.map((city) => {
-      const point = projectGleason(city.lat, city.lon, dialRadius, mapCenter);
-      return {
-        ...city,
-        x: point.x,
-        y: point.y,
-      };
-    });
-  }, [dialRadius, mapCenter]);
+  // Find if currently tagged coordinate matches a notable city
+  const matchedCity = useMemo(() => {
+    return NOTABLE_LOCATIONS.find(
+      (loc) => Math.abs(loc.lat - lat) < 0.25 && Math.abs(loc.lon - lon) < 0.25
+    );
+  }, [lat, lon]);
+
+  const selectedDropdownValue = useMemo(() => {
+    if (matchedCity) {
+      return `${matchedCity.city}, ${matchedCity.country}`;
+    }
+    return '';
+  }, [matchedCity]);
 
   // Gleason 1892 Patent Movable Time Indicator Arm
   // In the 1892 patent, a movable arm pivots around the North Pole and points to solar time on the rim
@@ -124,6 +124,17 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
     setZoomLevel(targetZoom);
     setPanOffset(newPan);
   }, [dialRadius, mapCenter]);
+
+  // Handle City selection from the Dropdown menu
+  const handleDropdownSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (!val) return;
+    const target = NOTABLE_LOCATIONS.find((loc) => `${loc.city}, ${loc.country}` === val);
+    if (target) {
+      onLocationChange({ lat: target.lat, lon: target.lon, name: `${target.city}, ${target.country}` });
+      zoomToPoint(target.lat, target.lon, Math.max(2.4, zoomLevel));
+    }
+  };
 
   // Pointer interactions
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -315,18 +326,6 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
 
             <button
               type="button"
-              onClick={() => setShowCapitals(!showCapitals)}
-              title="Toggle Capital Cities"
-              className={`px-2 py-1 text-xs rounded font-medium flex items-center gap-1 transition-colors ${
-                showCapitals ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Capitals</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => setShowGridOverlays(!showGridOverlays)}
               title="Toggle Equator & 45° Latitude Guideline Overlay"
               className={`px-2 py-1 text-xs rounded font-medium flex items-center gap-1 transition-colors ${
@@ -398,6 +397,58 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Dedicated City Selection Drop Down Menu */}
+      {mapStyle !== 'poster' && (
+        <div className="mb-3 bg-slate-800/90 border border-slate-700/80 rounded-xl p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shadow-md">
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-300 shrink-0">
+            <Building2 className="w-4 h-4 text-amber-400" />
+            <label htmlFor="gleason-city-dropdown" className="cursor-pointer">
+              Select City / Location:
+            </label>
+          </div>
+          <div className="relative flex-1 min-w-[200px]">
+            <select
+              id="gleason-city-dropdown"
+              value={selectedDropdownValue}
+              onChange={handleDropdownSelect}
+              className="w-full bg-slate-900 border border-slate-600 hover:border-amber-500/60 focus:border-amber-400 text-slate-100 text-xs rounded-lg px-3 py-2 pr-8 focus:outline-none transition-colors appearance-none cursor-pointer"
+            >
+              <option value="">
+                {matchedCity
+                  ? `📍 ${matchedCity.city}, ${matchedCity.country}`
+                  : `🎯 Custom Pinned (${lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`}, ${lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`})`}
+              </option>
+              <optgroup label="⭐ World Capitals">
+                {NOTABLE_LOCATIONS.filter((l) => l.isCapital).map((loc) => (
+                  <option key={`${loc.city}-${loc.country}`} value={`${loc.city}, ${loc.country}`}>
+                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(1)}°N` : `${Math.abs(loc.lat).toFixed(1)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(1)}°E` : `${Math.abs(loc.lon).toFixed(1)}°W`})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🏙️ Major Metropolises & Landmarks">
+                {NOTABLE_LOCATIONS.filter((l) => !l.isCapital).map((loc) => (
+                  <option key={`${loc.city}-${loc.country}`} value={`${loc.city}, ${loc.country}`}>
+                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(1)}°N` : `${Math.abs(loc.lat).toFixed(1)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(1)}°E` : `${Math.abs(loc.lon).toFixed(1)}°W`})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <ChevronDown className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCenterOnPin}
+            title="Center view on currently pinned location"
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+          >
+            <LocateFixed className="w-3.5 h-3.5 text-amber-400" />
+            <span>Center Pin</span>
+          </button>
         </div>
       )}
 
@@ -668,80 +719,6 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
                 </g>
               )}
 
-              {/* World Capitals & Major Cities Layer */}
-              {showCapitals && (
-                <g id="capitals-layer">
-                  {projectedCities.map((city) => {
-                    const isSelected = Math.abs(lat - city.lat) < 0.3 && Math.abs(lon - city.lon) < 0.3;
-                    const isCapital = city.isCapital;
-
-                    return (
-                      <g
-                        key={`${city.city}-${city.country}`}
-                        transform={`translate(${city.x}, ${city.y})`}
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onLocationChange({ lat: city.lat, lon: city.lon, name: `${city.city}, ${city.country}` });
-                        }}
-                        onPointerEnter={() => setHoveredCity(city)}
-                        onPointerLeave={() => setHoveredCity(null)}
-                      >
-                        {/* Hit Area */}
-                        <circle cx="0" cy="0" r={zoomLevel > 1.8 ? 10 : 7} fill="transparent" />
-
-                        {/* City Pin Node */}
-                        <circle
-                          cx="0"
-                          cy="0"
-                          r={isSelected ? 4.5 : isCapital ? 3.2 : 2.2}
-                          fill={isSelected ? '#22c55e' : isCapital ? '#fbbf24' : '#38bdf8'}
-                          stroke="#0f172a"
-                          strokeWidth="1.2"
-                        />
-                        {isCapital && (
-                          <circle
-                            cx="0"
-                            cy="0"
-                            r={isSelected ? 6.5 : 4.8}
-                            fill="none"
-                            stroke={isSelected ? '#4ade80' : '#d97706'}
-                            strokeWidth="0.8"
-                            strokeDasharray={isSelected ? 'none' : '2,2'}
-                          />
-                        )}
-
-                        {/* City Label */}
-                        {(zoomLevel >= 1.5 || isSelected || hoveredCity?.city === city.city || (zoomLevel >= 1.2 && isCapital)) && (
-                          <g transform="translate(6, -4)" className="pointer-events-none" filter="url(#pinShadow)">
-                            <rect
-                              x="-2"
-                              y="-9"
-                              width={city.city.length * 5.4 + 8}
-                              height="12"
-                              rx="2.5"
-                              fill="rgba(15, 23, 42, 0.92)"
-                              stroke={isSelected ? '#22c55e' : isCapital ? '#f59e0b' : '#64748b'}
-                              strokeWidth="0.7"
-                            />
-                            <text
-                              x="2"
-                              y="0"
-                              fill={isSelected ? '#86efac' : isCapital ? '#fef08a' : '#cbd5e1'}
-                              fontSize="6.8"
-                              fontWeight={isCapital || isSelected ? 'bold' : 'normal'}
-                              fontFamily="sans-serif"
-                            >
-                              {city.city}
-                            </text>
-                          </g>
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-              )}
-
               {/* Subsolar Point Marker (Live Overhead Sun Zenith) */}
               {showSun && (
                 <g
@@ -847,61 +824,6 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
                 <span>{hoverCoords.lon >= 0 ? `${hoverCoords.lon.toFixed(1)}°E` : `${Math.abs(hoverCoords.lon).toFixed(1)}°W`}</span>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* World Capital Cities Snapping Ribbon */}
-      {mapStyle !== 'poster' && (
-        <div className="mt-4 pt-3.5 border-t border-slate-800">
-          <div className="text-xs font-semibold text-slate-300 mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-200">World Capital Cities:</span>
-              <span className="text-[11px] text-slate-400 font-normal">Click any capital to jump pin & calculate</span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setCityFilter('capitals')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  cityFilter === 'capitals' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Capitals Only
-              </button>
-              <button
-                type="button"
-                onClick={() => setCityFilter('all')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  cityFilter === 'all' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                All Cities
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-700">
-            {NOTABLE_LOCATIONS.filter((loc) => (cityFilter === 'capitals' ? loc.isCapital : true)).map((loc) => (
-              <button
-                key={`${loc.city}-${loc.country}`}
-                type="button"
-                onClick={() => {
-                  onLocationChange({ lat: loc.lat, lon: loc.lon, name: `${loc.city}, ${loc.country}` });
-                  zoomToPoint(loc.lat, loc.lon, Math.max(2.4, zoomLevel));
-                }}
-                className={`text-[11px] px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-all ${
-                  Math.abs(lat - loc.lat) < 0.25 && Math.abs(lon - loc.lon) < 0.25
-                    ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 font-bold shadow-[0_0_8px_rgba(34,197,94,0.3)]'
-                    : 'bg-slate-800/70 text-slate-300 border-slate-700/60 hover:bg-slate-700/80 hover:text-amber-200'
-                }`}
-              >
-                {loc.isCapital && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-                <span>{loc.city}</span>
-                <span className="text-[9px] text-slate-400 opacity-70">({loc.country})</span>
-              </button>
-            ))}
           </div>
         </div>
       )}
