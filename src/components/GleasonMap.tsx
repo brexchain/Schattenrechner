@@ -19,6 +19,7 @@ import {
   Maximize2,
   Layers,
   ChevronDown,
+  Globe2,
 } from 'lucide-react';
 
 interface GleasonMapProps {
@@ -27,6 +28,7 @@ interface GleasonMapProps {
   onLocationChange: (coords: { lat: number; lon: number; name?: string }) => void;
   solarStatus: SolarStatus;
   selectedCityName?: string;
+  onSwitchToMercator?: () => void;
 }
 
 export const GleasonMap: React.FC<GleasonMapProps> = ({
@@ -35,6 +37,7 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
   onLocationChange,
   solarStatus,
   selectedCityName,
+  onSwitchToMercator,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -220,7 +223,7 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
   return (
     <div className="relative flex flex-col bg-slate-900/95 border border-amber-900/50 rounded-2xl p-4 md:p-5 shadow-2xl backdrop-blur-md text-slate-100 overflow-hidden">
       {/* Top Header & Map Style Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 z-10 border-b border-amber-900/40 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 z-10 border-b border-amber-900/40 pb-3">
         <div>
           <div className="flex items-center gap-2">
             <Compass className="w-5 h-5 text-amber-400" />
@@ -236,44 +239,73 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
           </p>
         </div>
 
-        {/* Map Style Selector */}
-        <div className="flex items-center gap-1 bg-slate-950/80 border border-amber-900/60 rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => setMapStyle('1892')}
-            className={`px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-              mapStyle === '1892'
-                ? 'bg-amber-600/30 text-amber-200 border border-amber-500/60 shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>1892 Original "As It Is"</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapStyle('modern')}
-            className={`px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-              mapStyle === 'modern'
-                ? 'bg-sky-600/30 text-sky-200 border border-sky-500/60 shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-sky-400" />
-            <span>Modern Flat Earth</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapStyle('poster')}
-            className={`px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-              mapStyle === 'poster'
-                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/60 shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 text-purple-400" />
-            <span>Full Patent Broadsheet</span>
-          </button>
+        {/* Projection Switch & Style Selector Group */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Projection Toggle Tabs */}
+          {onSwitchToMercator && (
+            <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-700/80 rounded-lg p-1">
+              <button
+                type="button"
+                className="px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 bg-amber-600/30 text-amber-200 border border-amber-500/60 shadow-md"
+                title="Currently viewing Gleason Polar Azimuthal Projection"
+              >
+                <Compass className="w-3.5 h-3.5 text-amber-400" />
+                <span>Gleason (1892)</span>
+              </button>
+              <button
+                type="button"
+                onClick={onSwitchToMercator}
+                className="px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 text-slate-400 hover:text-sky-200 hover:bg-slate-800/80 transition-all"
+                title="Switch to Mercator Cylindrical World Projection"
+              >
+                <Globe2 className="w-3.5 h-3.5 text-sky-400" />
+                <span>Mercator View</span>
+              </button>
+            </div>
+          )}
+
+          {/* Gleason Visual Sub-Styles */}
+          <div className="flex items-center gap-1 bg-slate-950/80 border border-amber-900/60 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setMapStyle('1892')}
+              className={`px-2 py-1 text-xs rounded-md font-semibold flex items-center gap-1 transition-all ${
+                mapStyle === '1892'
+                  ? 'bg-amber-600/30 text-amber-200 border border-amber-500/60 shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="1892 Original Gleason Map"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>1892 Original</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle('modern')}
+              className={`px-2 py-1 text-xs rounded-md font-semibold flex items-center gap-1 transition-all ${
+                mapStyle === 'modern'
+                  ? 'bg-sky-600/30 text-sky-200 border border-sky-500/60 shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Modern Clean Vector Style"
+            >
+              <Layers className="w-3.5 h-3.5 text-sky-400" />
+              <span>Modern</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle('poster')}
+              className={`px-2 py-1 text-xs rounded-md font-semibold flex items-center gap-1 transition-all ${
+                mapStyle === 'poster'
+                  ? 'bg-purple-600/30 text-purple-200 border border-purple-500/60 shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Full Patent Broadsheet Document"
+            >
+              <FileText className="w-3.5 h-3.5 text-purple-400" />
+              <span>Patent Poster</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -424,14 +456,14 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
               <optgroup label="⭐ World Capitals">
                 {NOTABLE_LOCATIONS.filter((l) => l.isCapital).map((loc) => (
                   <option key={`${loc.city}-${loc.country}`} value={`${loc.city}, ${loc.country}`}>
-                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(1)}°N` : `${Math.abs(loc.lat).toFixed(1)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(1)}°E` : `${Math.abs(loc.lon).toFixed(1)}°W`})
+                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(2)}°N` : `${Math.abs(loc.lat).toFixed(2)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(2)}°E` : `${Math.abs(loc.lon).toFixed(2)}°W`})
                   </option>
                 ))}
               </optgroup>
               <optgroup label="🏙️ Major Metropolises & Landmarks">
                 {NOTABLE_LOCATIONS.filter((l) => !l.isCapital).map((loc) => (
                   <option key={`${loc.city}-${loc.country}`} value={`${loc.city}, ${loc.country}`}>
-                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(1)}°N` : `${Math.abs(loc.lat).toFixed(1)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(1)}°E` : `${Math.abs(loc.lon).toFixed(1)}°W`})
+                    {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(2)}°N` : `${Math.abs(loc.lat).toFixed(2)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(2)}°E` : `${Math.abs(loc.lon).toFixed(2)}°W`})
                   </option>
                 ))}
               </optgroup>
@@ -526,7 +558,8 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
           <svg
             ref={svgRef}
             viewBox="0 0 800 800"
-            className="w-full h-full"
+            className="w-full h-full rotate-[12deg]"
+            style={{ transform: 'rotate(12deg)', transformOrigin: 'center center' }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -739,10 +772,10 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
                       transform={`rotate(${angle})`}
                     />
                   ))}
-                  <g transform="translate(14, 4)" filter="url(#pinShadow)">
-                    <rect x="-2" y="-9" width="84" height="13" rx="2.5" fill="rgba(15, 23, 42, 0.9)" stroke="#f59e0b" strokeWidth="0.8" />
+                  <g transform="rotate(-12) translate(14, 4)" filter="url(#pinShadow)">
+                    <rect x="-2" y="-9" width="92" height="13" rx="2.5" fill="rgba(15, 23, 42, 0.9)" stroke="#f59e0b" strokeWidth="0.8" />
                     <text x="2" y="1" fill="#fef08a" fontSize="7.2" fontWeight="bold" fontFamily="sans-serif">
-                      Sun Zenith ({solarStatus.subsolarPoint.lat.toFixed(1)}°)
+                      Sun Zenith ({solarStatus.subsolarPoint.lat >= 0 ? `${solarStatus.subsolarPoint.lat.toFixed(2)}°N` : `${Math.abs(solarStatus.subsolarPoint.lat).toFixed(2)}°S`})
                     </text>
                   </g>
                 </g>
@@ -777,29 +810,31 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
                 <path d="M 0 0 L 0 -24 L 16 -18 L 0 -11 Z" fill="#22c55e" stroke="#15803d" strokeWidth="1" />
                 <line x1="0" y1="0" x2="0" y2="-24" stroke="#ffffff" strokeWidth="1.5" />
 
-                {/* Coordinate Readout Tooltip */}
-                <rect
-                  x="-50"
-                  y="-42"
-                  width="100"
-                  height="15"
-                  rx="3.5"
-                  fill="rgba(15, 23, 42, 0.95)"
-                  stroke="#22c55e"
-                  strokeWidth="1.2"
-                />
-                <text
-                  x="0"
-                  y="-31"
-                  textAnchor="middle"
-                  fill="#86efac"
-                  fontSize="8.5"
-                  fontWeight="bold"
-                  fontFamily="sans-serif"
-                >
-                  {lat >= 0 ? `${lat.toFixed(1)}°N` : `${Math.abs(lat).toFixed(1)}°S`},{' '}
-                  {lon >= 0 ? `${lon.toFixed(1)}°E` : `${Math.abs(lon).toFixed(1)}°W`}
-                </text>
+                {/* Coordinate Readout Tooltip (Counter-rotated -12deg so text stays level) */}
+                <g transform="rotate(-12)">
+                  <rect
+                    x="-55"
+                    y="-42"
+                    width="110"
+                    height="16"
+                    rx="3.5"
+                    fill="rgba(15, 23, 42, 0.95)"
+                    stroke="#22c55e"
+                    strokeWidth="1.2"
+                  />
+                  <text
+                    x="0"
+                    y="-31"
+                    textAnchor="middle"
+                    fill="#86efac"
+                    fontSize="8.5"
+                    fontWeight="bold"
+                    fontFamily="sans-serif"
+                  >
+                    {lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`},{' '}
+                    {lon >= 0 ? `${lon.toFixed(2)}°E` : `${Math.abs(lon).toFixed(2)}°W`}
+                  </text>
+                </g>
               </g>
 
               {/* North Pole Center Pivot */}
@@ -820,8 +855,8 @@ export const GleasonMap: React.FC<GleasonMapProps> = ({
             {hoverCoords && (
               <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-slate-700 text-sky-300 text-[11px] font-mono">
                 <span>Cursor:</span>
-                <span>{hoverCoords.lat >= 0 ? `${hoverCoords.lat.toFixed(1)}°N` : `${Math.abs(hoverCoords.lat).toFixed(1)}°S`},</span>
-                <span>{hoverCoords.lon >= 0 ? `${hoverCoords.lon.toFixed(1)}°E` : `${Math.abs(hoverCoords.lon).toFixed(1)}°W`}</span>
+                <span>{hoverCoords.lat >= 0 ? `${hoverCoords.lat.toFixed(2)}°N` : `${Math.abs(hoverCoords.lat).toFixed(2)}°S`},</span>
+                <span>{hoverCoords.lon >= 0 ? `${hoverCoords.lon.toFixed(2)}°E` : `${Math.abs(hoverCoords.lon).toFixed(2)}°W`}</span>
               </div>
             )}
           </div>

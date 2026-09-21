@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { GleasonMap } from './components/GleasonMap';
+import { MercatorMap } from './components/MercatorMap';
 import { SolarHero } from './components/SolarHero';
 import { DailySolarChart } from './components/DailySolarChart';
 import { YearlySolarCalendar } from './components/YearlySolarCalendar';
@@ -9,13 +10,16 @@ import { PersonalizedVitDCalculator } from './components/PersonalizedVitDCalcula
 import { getSolarPosition, calculateDayWindow, calculateYearWindow, getSkinTypes } from './utils/solar';
 import { MajorCity } from './data/continents';
 import { SkinType } from './types';
-import { Compass, Sun, Globe, Shield, Sparkles } from 'lucide-react';
+import { Compass, Sun, Globe, Shield, Sparkles, Globe2 } from 'lucide-react';
 
 export default function App() {
   // Default coordinates (Berlin: 52.5200° N, 13.4050° E)
   const [lat, setLat] = useState<number>(52.5200);
   const [lon, setLon] = useState<number>(13.4050);
   const [selectedCityName, setSelectedCityName] = useState<string | undefined>('Berlin, Germany');
+
+  // Projection View: Gleason (Polar Azimuthal) vs. Mercator (Cylindrical) - Default: Mercator
+  const [mapProjection, setMapProjection] = useState<'gleason' | 'mercator'>('mercator');
 
   // Date and live timer
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -48,7 +52,7 @@ export default function App() {
           setLat(uLat);
           setLon(uLon);
           setSelectedCityName('Your Detected Location');
-          setGeoStatusMessage(`GPS detected: ${uLat}°N, ${uLon}°E`);
+          setGeoStatusMessage(`GPS detected: ${uLat >= 0 ? `${uLat.toFixed(2)}°N` : `${Math.abs(uLat).toFixed(2)}°S`}, ${uLon >= 0 ? `${uLon.toFixed(2)}°E` : `${Math.abs(uLon).toFixed(2)}°W`}`);
         },
         () => {
           // Keep default Berlin
@@ -115,7 +119,7 @@ export default function App() {
         setLon(uLon);
         setSelectedCityName('Current GPS Location');
         setGeoLoading(false);
-        setGeoStatusMessage(`Acquired coordinates: ${uLat}°, ${uLon}°`);
+        setGeoStatusMessage(`Acquired coordinates: ${uLat >= 0 ? `${uLat.toFixed(2)}°N` : `${Math.abs(uLat).toFixed(2)}°S`}, ${uLon >= 0 ? `${uLon.toFixed(2)}°E` : `${Math.abs(uLon).toFixed(2)}°W`}`);
       },
       (err) => {
         setGeoLoading(false);
@@ -147,7 +151,7 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-white">
-                  Gleason Map & Vitamin D Calculator
+                  Gleason & Mercator Map • Vitamin D Calculator
                 </h1>
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
                   <Sun className="w-3 h-3" />
@@ -155,7 +159,7 @@ export default function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Tag any point on Gleason's 1892 Polar Azimuthal Projection to calculate sun elevation & UVB synthesis
+                Tag any point on Gleason's 1892 Azimuthal or Mercator Cylindrical Projections to calculate sun elevation & UVB synthesis
               </p>
             </div>
           </div>
@@ -188,16 +192,62 @@ export default function App() {
 
       {/* Main Grid Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-        {/* Left Column: Interactive Gleason Map & Coordinates Setup (6 cols on lg) */}
+        {/* Left Column: Interactive Map & Coordinates Setup (6 cols on lg) */}
         <div className="lg:col-span-6 flex flex-col gap-5">
-          {/* Interactive Gleason Map Component */}
-          <GleasonMap
-            lat={lat}
-            lon={lon}
-            onLocationChange={handleLocationChange}
-            solarStatus={solarStatus}
-            selectedCityName={selectedCityName}
-          />
+          {/* Projection Selector Tabs */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 flex items-center justify-between gap-2 shadow-md">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-2">
+              <Globe2 className="w-4 h-4 text-sky-400" />
+              <span className="font-semibold hidden sm:inline">Active Map View:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMapProjection('gleason')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  mapProjection === 'gleason'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-amber-400" />
+                <span>Gleason (Polar Azimuthal)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapProjection('mercator')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  mapProjection === 'mercator'
+                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Globe2 className="w-3.5 h-3.5 text-sky-400" />
+                <span>Mercator (Cylindrical)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Map Component (Gleason or Mercator) */}
+          {mapProjection === 'gleason' ? (
+            <GleasonMap
+              lat={lat}
+              lon={lon}
+              onLocationChange={handleLocationChange}
+              solarStatus={solarStatus}
+              selectedCityName={selectedCityName}
+              onSwitchToMercator={() => setMapProjection('mercator')}
+            />
+          ) : (
+            <MercatorMap
+              lat={lat}
+              lon={lon}
+              onLocationChange={handleLocationChange}
+              solarStatus={solarStatus}
+              selectedCityName={selectedCityName}
+              onSwitchToGleason={() => setMapProjection('gleason')}
+            />
+          )}
 
           {/* Coordinates & Date/Time Setup Panel */}
           <CoordinatePanel

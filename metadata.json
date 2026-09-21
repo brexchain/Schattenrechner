@@ -1,6 +1,6 @@
 {
   "name": "Gleason Map & Vitamin D Calculator",
-  "description": "Interactive Gleason polar azimuthal map to tag any location worldwide, calculate real-time sun elevation, shadow ratio, and Vitamin D synthesis windows.",
+  "description": "Interactive Gleason polar azimuthal and Mercator cylindrical maps to tag any location worldwide, calculate real-time sun elevation, shadow ratio, and Vitamin D synthesis windows.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -86,7 +86,7 @@ export const CoordinatePanel: React.FC<CoordinatePanelProps> = ({
                 {NOTABLE_LOCATIONS.map((loc, idx) =>
                   loc.isCapital ? (
                     <option key={`${loc.city}-${idx}`} value={idx}>
-                      {loc.city}, {loc.country} ({loc.lat.toFixed(2)}°, {loc.lon.toFixed(2)}°)
+                      {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(2)}°N` : `${Math.abs(loc.lat).toFixed(2)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(2)}°E` : `${Math.abs(loc.lon).toFixed(2)}°W`})
                     </option>
                   ) : null
                 )}
@@ -95,7 +95,7 @@ export const CoordinatePanel: React.FC<CoordinatePanelProps> = ({
                 {NOTABLE_LOCATIONS.map((loc, idx) =>
                   !loc.isCapital ? (
                     <option key={`${loc.city}-${idx}`} value={idx}>
-                      {loc.city}, {loc.country} ({loc.lat.toFixed(2)}°, {loc.lon.toFixed(2)}°)
+                      {loc.city}, {loc.country} ({loc.lat >= 0 ? `${loc.lat.toFixed(2)}°N` : `${Math.abs(loc.lat).toFixed(2)}°S`}, {loc.lon >= 0 ? `${loc.lon.toFixed(2)}°E` : `${Math.abs(loc.lon).toFixed(2)}°W`})
                     </option>
                   ) : null
                 )}

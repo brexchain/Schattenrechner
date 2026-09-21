@@ -120,7 +120,7 @@ export const YearlySolarCalendar: React.FC<YearlySolarCalendarProps> = ({
         <div className="flex items-center gap-2 text-amber-300">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           <span>
-            At this latitude ({lat.toFixed(1)}°), the sun <strong>never reaches 45°</strong> at any point during the year (Max Peak: {yearWindow.peakElevation.toFixed(1)}°). Year-round cutaneous Vitamin D3 synthesis is severely limited or impossible.
+            At this latitude ({lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`}), the sun <strong>never reaches 45°</strong> at any point during the year (Max Peak: {yearWindow.peakElevation.toFixed(1)}°). Year-round cutaneous Vitamin D3 synthesis is severely limited or impossible.
           </span>
         </div>
       );
@@ -132,7 +132,7 @@ export const YearlySolarCalendar: React.FC<YearlySolarCalendarProps> = ({
         <div className="flex items-center gap-2 text-emerald-300">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
           <span>
-            Tropical latitude ({lat.toFixed(1)}°): The midday sun exceeds 45° <strong>all year round</strong>. Natural Vitamin D synthesis is achievable in all 12 months.
+            Tropical latitude ({lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`}): The midday sun exceeds 45° <strong>all year round</strong>. Natural Vitamin D synthesis is achievable in all 12 months.
           </span>
         </div>
       );
