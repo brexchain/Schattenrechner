@@ -31,7 +31,6 @@ interface MercatorMapProps {
   onLocationChange: (coords: { lat: number; lon: number; name?: string }) => void;
   solarStatus: SolarStatus;
   selectedCityName?: string;
-  onSwitchToGleason?: () => void;
 }
 
 export const MercatorMap: React.FC<MercatorMapProps> = ({
@@ -40,7 +39,6 @@ export const MercatorMap: React.FC<MercatorMapProps> = ({
   onLocationChange,
   solarStatus,
   selectedCityName,
-  onSwitchToGleason,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -351,42 +349,36 @@ export const MercatorMap: React.FC<MercatorMapProps> = ({
       id="mercator-map-container"
       className="bg-slate-900/95 border-2 border-sky-500/30 rounded-2xl p-4 shadow-2xl relative overflow-hidden backdrop-blur-sm"
     >
-      {/* Top Header & Projection Switcher Bar */}
+      {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-slate-800 pb-3">
         <div>
           <div className="flex items-center gap-2">
             <Globe2 className="w-5 h-5 text-sky-400" />
             <h3 className="font-bold text-slate-100 text-sm tracking-wide">
-              Mercator World Projection (Cylindrical)
+              World Map (Mercator Conformal Projection)
             </h3>
             <span className="text-[10px] bg-sky-500/20 text-sky-300 font-mono px-2 py-0.5 rounded border border-sky-500/40 font-bold uppercase tracking-wider">
-              Standard Conformal
+              Live Sun &amp; Day/Night
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Classic cylindrical projection with horizontal parallels of latitude, showing the 45° Vitamin D threshold and live day/night solar terminator wave.
+            Click or drag anywhere to position coordinates, with the critical 45° Vitamin D boundary and real-time day/night solar terminator wave.
           </p>
         </div>
 
-        {/* Projection Switch Tabs */}
-        <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-700/80 rounded-lg p-1 shrink-0">
-          <button
-            type="button"
-            onClick={onSwitchToGleason}
-            className="px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 text-slate-400 hover:text-amber-200 hover:bg-slate-800/80 transition-all"
-            title="Switch back to 1892 Gleason Polar Azimuthal Projection"
-          >
-            <Compass className="w-3.5 h-3.5 text-amber-400" />
-            <span>Gleason (1892)</span>
-          </button>
-          <button
-            type="button"
-            className="px-2.5 py-1 text-xs rounded-md font-semibold flex items-center gap-1.5 bg-sky-600/30 text-sky-200 border border-sky-500/60 shadow-md"
-            title="Currently viewing Mercator Cylindrical Projection"
-          >
-            <Globe2 className="w-3.5 h-3.5 text-sky-400" />
-            <span>Mercator View</span>
-          </button>
+        {/* Live Subsolar Coordinate Indicator */}
+        <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-700/80 rounded-lg px-3 py-1.5 shrink-0 text-xs">
+          <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+          <span className="text-slate-400">Sun Zenith:</span>
+          <span className="font-mono font-bold text-amber-300">
+            {solarStatus.subsolarPoint.lat >= 0
+              ? `${solarStatus.subsolarPoint.lat.toFixed(2)}°N`
+              : `${Math.abs(solarStatus.subsolarPoint.lat).toFixed(2)}°S`}
+            ,{' '}
+            {solarStatus.subsolarPoint.lon >= 0
+              ? `${solarStatus.subsolarPoint.lon.toFixed(2)}°E`
+              : `${Math.abs(solarStatus.subsolarPoint.lon).toFixed(2)}°W`}
+          </span>
         </div>
       </div>
 
